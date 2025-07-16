@@ -25,3 +25,15 @@ def bytes_to_int(msg: bytes) -> int:
         exp -= 1
 
     return value
+
+# exponenciacao rapida, complexidade O(log2(exp)), considerando que a multiplicacao ocorre em O(1)
+def binpow(base: int, exp: int, mod: int) -> int:
+    res = 1
+
+    while exp > 0:
+        if exp%2 == 1:
+            res = (res * base) % mod
+        base = (base * base) % mod
+        exp //= 2
+    
+    return res
