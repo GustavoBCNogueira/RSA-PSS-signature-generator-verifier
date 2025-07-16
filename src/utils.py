@@ -16,3 +16,12 @@ def int_to_bytes(value: int, size: int) -> bytes:
         byte_seq += bytes([b])
 
     return byte_seq
+
+def bytes_to_int(msg: bytes) -> int:
+    value = 0
+    exp = len(msg)-1
+    for b in msg:
+        value += b * pow(256, exp)
+        exp -= 1
+
+    return value

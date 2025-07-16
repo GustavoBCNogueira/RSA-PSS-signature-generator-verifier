@@ -2,6 +2,8 @@ import hashlib
 import math
 import secrets
 import utils
+import rsa
+from base64 import b64encode, b64decode
 
 # globals
 HASH_LEN = 32       # numero de bytes que o hash utilizado retorna
@@ -64,3 +66,9 @@ def EMSA_verify(orig_msg: bytes, encoded_msg: bytes, em_bits: int) -> bool:
     h = encoded_msg[em_len-HASH_LEN-1:em_len-1]
 
     # verificando se os 8*em_len-em_bits da esquerda sao 0
+
+# nao sei se gero as chaves aqui ou se gero fora e passo a chave privada pra funcao
+def sign(message: bytes, pr: bytes, n: bytes) -> bytes:
+    num_bits = math.floor(math.log2(utils.bytes_to_int(n)))
+    padded_msg = EMSA_encode(message, num_bits - 1)
+    return b64encode(utils.int_to_bytes(rsa.encrypt(padded_msg, pr, n), math.ceil(num_bits / 8)))
