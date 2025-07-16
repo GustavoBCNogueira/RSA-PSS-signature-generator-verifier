@@ -50,3 +50,17 @@ def EMSA_encode(message: bytes, max_len: int) -> bytes:
 
     # retornando o EM final
     return masked_db + hash_partial + b'\xbc'
+
+def EMSA_verify(orig_msg: bytes, encoded_msg: bytes, em_bits: int) -> bool:
+    global HASH_LEN
+    global SALT_LEN
+
+    # tamanho fornecido errado, ou se o ultimo byte nao segue o padrao do EMSA
+    em_len = math.ceil(em_bits / 8)
+    if em_len < HASH_LEN + SALT_LEN + 2 or encoded_msg[-1] != b'\xbc':
+        return False
+    
+    masked_db = encoded_msg[:em_len-HASH_LEN-1]
+    h = encoded_msg[em_len-HASH_LEN-1:em_len-1]
+
+    # verificando se os 8*em_len-em_bits da esquerda sao 0
