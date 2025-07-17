@@ -131,9 +131,9 @@ def generate_rsa_keys(bits=1024):
         q = generate_prime(bits)
 
     n   = p * q
-    φ   = (p - 1) * (q - 1)
-    e   = 65537 if math.gcd(65537, φ) == 1 else 3
-    d   = modinv(e, φ)
+    phi   = (p - 1) * (q - 1)
+    e   = 65537 if math.gcd(65537, phi) == 1 else 3
+    d   = modinv(e, phi)
     dP  = d % (p - 1)
     dQ  = d % (q - 1)
     qInv = modinv(q, p)
