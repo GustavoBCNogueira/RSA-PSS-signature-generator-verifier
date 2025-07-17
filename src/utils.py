@@ -76,6 +76,41 @@ def _pem_wrap(data: bytes, header: str, footer: str) -> str:
     return f"-----BEGIN {header}-----\n" + "\n".join(lines) + \
            f"\n-----END {footer}-----\n"
 
+
+
+# Função auxiliar para ler o comprimento ASN.1
+def _read_asn1_len(data: bytes, offset: int):
+    # Extrai o primeiro byte
+    first = data[offset]
+
+    # Se o primeiro byte for menor que 0x80, é o comprimento direto
+    offset += 1
+    if first < 0x80:
+        return first, offset
+    
+    # Se o primeiro byte for 0x80 ou maior, indica o número de bytes que seguem
+    num_bytes = first & 0x7F
+
+    # O comprimento é lido a partir dos próximos bytes e retorna o valor e o novo offset
+    val = int.from_bytes(data[offset:offset + num_bytes], byteorder="big")
+    return val, offset + num_bytes
+
+# Função auxiliar para ler um INTEGER ASN.1
+def _read_asn1_int(data: bytes, offset: int):
+    # Verifica se o primeiro byte é do tipo INTEGER
+    if data[offset] != 0x02:
+        raise ValueError("Expected INTEGER")
+    
+    # Incrementa o offset para o próximo byte
+    offset += 1
+    
+    # Lê o comprimento do INTEGER e altera o offset
+    length, offset = _read_asn1_len(data, offset)
+
+    # O valor INTEGER é lido a partir do offset atual e retorna o valor e o novo offset
+    val_bytes = data[offset:offset + length]
+    return val_bytes, offset + length
+
 def bytes_to_int(msg: bytes) -> int:
     value = 0
     exp = len(msg)-1
