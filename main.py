@@ -1,6 +1,7 @@
 import src.signature as signature
 import src.key_generation as key_generation
 import src.rsa as rsa
+import math
 
 op = 1
 while op != 0:
@@ -15,7 +16,19 @@ while op != 0:
 
     op = int(input())
     if op == 1:
-        pass
+        # gerando chaves, por meio da geracao de primos de 2047 bits
+        keys = key_generation.generate_rsa_keys(2048)
+        
+        diff = input("\nDigite uma palavra para diferenciar estas chaves: ").split()[0]
+        print()
+
+        try:
+            key_generation.write_public_pem("keys/public_key_" + diff + ".pem", keys['n'], keys['e'])
+            key_generation.write_private_pem("keys/private_key_" + diff + ".pem", keys)
+
+            print("\nChaves geradas e escritas em arquivos .pem com sucesso.")
+        except:
+            print("\nErro na escrita dos arquivos .pem")
     elif op == 2:
         pass
     elif op == 3:
@@ -24,3 +37,4 @@ while op != 0:
         pass
     elif op == 5:
         pass
+    print()

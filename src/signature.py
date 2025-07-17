@@ -1,8 +1,8 @@
 import hashlib
 import math
 import secrets
-import utils
-import rsa
+import src.utils as utils
+import src.rsa as rsa
 from base64 import b64encode, b64decode
 
 # globals

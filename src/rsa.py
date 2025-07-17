@@ -1,4 +1,4 @@
-import utils
+import src.utils as utils
 
 def encrypt(plain: bytes, pr: bytes, n: bytes) -> int:
     plain = utils.bytes_to_int(plain)
