@@ -1,9 +1,9 @@
 import math
-import utils
+import src.utils as utils
 
 # globals
-HASH_LEN = 32       # numero de bytes que o hash utilizado retorna
-SALT_LEN = 32       # numero de bytes que sera utilizado no salt
+HASH_LEN = utils.HASH_LEN       # numero de bytes que o hash utilizado retorna
+SALT_LEN = utils.SALT_LEN       # numero de bytes que sera utilizado no salt
 
 def EMSA_verify(orig_msg: bytes, encoded_msg: bytes, em_bits: int) -> bool:
     global HASH_LEN
