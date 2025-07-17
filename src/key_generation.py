@@ -1,6 +1,8 @@
 import secrets
 import math
 import utils
+import base64
+import re
 
 # Gerando os primeiros 500 primos para otimizar a verificação de primalidade
 FIRST_500_PRIMES = [
@@ -94,7 +96,6 @@ def is_probable_prime(n: int) -> bool:
 
 # Função para gerar um primo randômico de tamanho exato em bits
 def generate_prime(bits: int = 1024) -> int:
-    "Return a probable prime of exactly `bits` bits."
     while True:
         candidate = secrets.randbits(bits)
         candidate |= (1 << bits - 1) | 1          # force MSB and odd
@@ -133,10 +134,6 @@ def generate_rsa_keys(bits=1024):
 
 # Função para escrever chave pública em formato PEM
 def write_public_pem(filename: str, n: int, e: int):
-    """
-    Writes SubjectPublicKeyInfo *without* X.509 wrappers
-    (i.e. simple PKCS#1 RSA PUBLIC KEY).
-    """
     der = utils._der_seq(utils._der_int(n), utils._der_int(e))
     pem = utils._pem_wrap(der, "RSA PUBLIC KEY", "RSA PUBLIC KEY")
     with open(filename, "w", encoding="utf‑8") as f:
@@ -144,14 +141,8 @@ def write_public_pem(filename: str, n: int, e: int):
 
 # Função para escrever chave privada em formato PEM
 def write_private_pem(filename: str, params: dict):
-    """
-    Writes PKCS#1 RSA PRIVATE KEY containing CRT parameters.
-    sequence(
-        version, n, e, d, p, q, dP, dQ, qInv
-    )
-    """
     der = utils._der_seq(
-        utils._der_int(0),                      # version
+        utils._der_int(0),                      
         utils._der_int(params["n"]),
         utils._der_int(params["e"]),
         utils._der_int(params["d"]),
@@ -165,13 +156,113 @@ def write_private_pem(filename: str, params: dict):
     with open(filename, "w", encoding="utf‑8") as f:
         f.write(pem)
 
-# Função principal para gerar e salvar chaves RSA
+
+# Função auxiliar para ler o comprimento ASN.1
+def _read_asn1_len(data: bytes, offset: int):
+    # Extrai o primeiro byte
+    first = data[offset]
+
+    # Se o primeiro byte for menor que 0x80, é o comprimento direto
+    offset += 1
+    if first < 0x80:
+        return first, offset
+    
+    # Se o primeiro byte for 0x80 ou maior, indica o número de bytes que seguem
+    num_bytes = first & 0x7F
+
+    # O comprimento é lido a partir dos próximos bytes e retorna o valor e o novo offset
+    val = int.from_bytes(data[offset:offset + num_bytes], byteorder="big")
+    return val, offset + num_bytes
+
+# Função auxiliar para ler um INTEGER ASN.1
+def _read_asn1_int(data: bytes, offset: int):
+    # Verifica se o primeiro byte é do tipo INTEGER
+    if data[offset] != 0x02:
+        raise ValueError("Expected INTEGER")
+    
+    # Incrementa o offset para o próximo byte
+    offset += 1
+    
+    # Lê o comprimento do INTEGER e altera o offset
+    length, offset = _read_asn1_len(data, offset)
+
+    # O valor INTEGER é lido a partir do offset atual e retorna o valor e o novo offset
+    val_bytes = data[offset:offset + length]
+    return val_bytes, offset + length
+
+# Função para ler chave pública em formato PEM
+def read_public_pem(filename: str):
+    # Abrindo o arquivo PEM
+    with open(filename, "r", encoding="utf-8") as f:
+        pem = f.read()
+
+    # Verificando se o formato PEM é válido
+    match = re.search(r"-----BEGIN RSA PUBLIC KEY-----(.*?)-----END RSA PUBLIC KEY-----", pem, re.DOTALL)
+    if not match:
+        raise ValueError("Invalid public key PEM format")
+
+    # Decodificando o conteúdo DER
+    der = base64.b64decode(match.group(1).replace("\n", "").replace("\r", ""))
+
+    # Verificando se o DER começa com SEQUENCE
+    offset = 0
+    if der[offset] != 0x30:
+        raise ValueError("Expected SEQUENCE")
+    
+    # Lendo o comprimento do SEQUENCE
+    _, offset = _read_asn1_len(der, offset + 1)
+
+    # Lendo os componentes n e e
+    n_bytes, offset = _read_asn1_int(der, offset)
+    e_bytes, offset = _read_asn1_int(der, offset)
+
+    # retorna os bytes de n e e
+    return n_bytes, e_bytes
+
+def read_private_pem(filename: str):
+    # Abrindo o arquivo PEM
+    with open(filename, "r", encoding="utf-8") as f:
+        pem = f.read()
+
+    # Verificando se o formato PEM é válido
+    match = re.search(r"-----BEGIN RSA PRIVATE KEY-----(.*?)-----END RSA PRIVATE KEY-----", pem, re.DOTALL)
+    if not match:
+        raise ValueError("Invalid private key PEM format")
+
+    # Decodificando o conteúdo DER
+    der = base64.b64decode(match.group(1).replace("\n", "").replace("\r", ""))
+
+    # Verificando se o DER começa com SEQUENCE
+    offset = 0
+    if der[offset] != 0x30:
+        raise ValueError("Expected SEQUENCE")
+    _, offset = _read_asn1_len(der, offset + 1)
+
+    # Lendo a versão da chave privada
+    version_bytes, offset = _read_asn1_int(der, offset)
+    version = int.from_bytes(version_bytes, "big")
+    if version != 0:
+        raise ValueError("Unsupported RSA key version")
+
+    # Lendo os componentes n, e, e d da chave privada
+    keys = {}
+    keys["n"], offset = _read_asn1_int(der, offset)
+    keys["e"], offset = _read_asn1_int(der, offset)
+    keys["d"], offset = _read_asn1_int(der, offset)
+
+    # Retornando os componentes n e d da chave privada
+    return keys["n"], keys["d"]
+
+# Função principal para gerar, salvar e ler chaves RSA
 if __name__ == "__main__":
     key_bits = 1024
-    print(f"[+] Generating {key_bits*2}-bit RSA key pair …")
+    print(f"[+] Gerando par de chaves de {key_bits*2} bits  …")
     kp = generate_rsa_keys(key_bits)
 
     write_public_pem("public_key.pem",  kp["n"], kp["e"])
     write_private_pem("private_key.pem", kp)
 
-    print("[✓] public_key.pem and private_key.pem written")
+    print("[✓] public_key.pem e private_key.pem gerados com sucesso.")
+
+    n_public, e = read_public_pem("public_key.pem")
+    n_private, d = read_private_pem("private_key.pem")
