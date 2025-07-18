@@ -142,7 +142,6 @@ while op != 0:
         except:
             print("\nErro na interpretacao do arquivo .sig")
 
-        print(sig)
         verif = verify_signature.verify(sig, file_data, e, n)
         if verif:
             print("\nAssinatura Valida!")
