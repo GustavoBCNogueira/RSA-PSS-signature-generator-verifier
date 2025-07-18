@@ -6,9 +6,6 @@ import src.verify_signature as verify_signature
 from base64 import b64encode, b64decode
 import math
 
-a = signature.EMSA_encode(b"\x01\x02\x03", 1024)
-print(verify_signature.EMSA_verify(b"\x01\x02\x03", a, 1024))
-
 op = 1
 while op != 0:
     print("\n------------------------------------------------------------------------------------------------")
