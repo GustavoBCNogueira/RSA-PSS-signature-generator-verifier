@@ -45,3 +45,6 @@ Digite:
 ### 5️⃣ Verificação de assinatura
 - Informe o caminho do arquivo .sig a ser verificado.
 - O programa validará a assinatura com a chave pública.
+
+### 0️⃣ Saída do programa
+- O programa será encerrado.
