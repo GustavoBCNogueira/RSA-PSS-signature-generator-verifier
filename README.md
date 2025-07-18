@@ -10,11 +10,9 @@ No terminal, execute:
 
 ```bash
 python3 main.py
+```
 Você verá o seguinte menu:
-
-vbnet
-Copiar
-Editar
+```
 Digite:
 1 para realizar a geracao de chaves.
 2 para realizar um encriptacao com RSA.
