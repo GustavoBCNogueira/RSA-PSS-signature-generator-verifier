@@ -28,6 +28,7 @@ def int_to_bytes(value: int, size: int) -> bytes:
     while size - len(byte_seq) > len(result):
         byte_seq += b"\x00"
     
+    result.reverse()
     for b in result:
         byte_seq += bytes([b])
 
