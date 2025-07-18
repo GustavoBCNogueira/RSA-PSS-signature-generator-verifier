@@ -1,5 +1,7 @@
 import math
 import src.utils as utils
+import src.rsa as rsa
+from base64 import b64encode
 
 # globals
 HASH_LEN = utils.HASH_LEN       # numero de bytes que o hash utilizado retorna
@@ -55,3 +57,10 @@ def EMSA_verify(orig_msg: bytes, encoded_msg: bytes, em_bits: int) -> bool:
     if msg_hash_partial != hash_partial:
         return False
     return True
+
+def verify(signature: bytes, orig_data: bytes, pu_e: bytes, pu_n: bytes) -> bool:
+    # decifra a assinatura
+    n_bits = math.floor(math.log2(utils.bytes_to_int(pu_n)))
+    plain_sig = rsa.decrypt(utils.bytes_to_int(signature), pu_e, pu_n, math.ceil(n_bits / 8))
+    signature = plain_sig[-(math.ceil((n_bits-1) / 8)):]
+    return EMSA_verify(orig_data, signature, n_bits-1)
